@@ -1,7 +1,7 @@
 (ns re-frame-tictactoe.views
-  (:require [re-frame.core :as re-frame]
-            [re-frame-tictactoe.game :as game]
-            [clojure.string :as string]))
+  (:require [clojure.string :as string]
+            [re-frame.core :as re-frame]
+            [re-frame-tictactoe.game :as game]))
 
 (defn circle [i j]
   [:circle {:r 0.45
@@ -42,25 +42,34 @@
               j (range game/board-size)]
           [cell i j (get-in board-state [i j])])))
 
+(defn game-status [board-state]
+  (let [game-winner (game/winner board-state)]
+    [:h1
+     (cond
+       game-winner (str "Game over: " game-winner " has won")
+       (empty? (game/open-cells board-state)) "Game over: Tie"
+       :else "Tic-Tac-Toe")]))
+
+(defn toggle-computer-opponent-btn []
+  [:button
+   {:style {:margin 10}
+    :on-click #(re-frame/dispatch [:toggle-computer-opponent])}
+   (str "Computer Player: " (if @(re-frame/subscribe [:computer-opponent]) "ON" "OFF"))])
+
+(defn reset-game-btn []
+  [:button
+   {:on-click #(re-frame/dispatch [:reset-game])}
+   "Reset"])
+
 (defn tic-tac-toe []
-  (let [board-state @(re-frame/subscribe [:board])
-        game-winner (game/winner board-state)]
+  (let [board-state @(re-frame/subscribe [:board])]
     [:div
      {:style
       {:margin "0 auto"
        :width 500
        :text-align "center"}}
-     [:h1
-      (cond
-        game-winner (str "Game over: " game-winner " has won")
-        (empty? (game/open-cells board-state)) "Game over: Tie"
-        :else "Tic-Tac-Toe")]
-     [:button
-      {:style {:margin 10}
-       :on-click #(re-frame/dispatch [:toggle-computer-opponent])}
-      (str "Computer Player: " (if @(re-frame/subscribe [:computer-opponent]) "ON" "OFF"))]
+     [game-status board-state]
+     [toggle-computer-opponent-btn]
      [board board-state]
      (when (game/game-over? board-state)
-       [:button
-        {:on-click #(re-frame/dispatch [:reset-game])}
-        "Reset"])]))
+       [reset-game-btn])]))
